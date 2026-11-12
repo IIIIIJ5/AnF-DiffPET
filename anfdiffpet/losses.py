@@ -1,4 +1,6 @@
-"""Frequency-Contrastive Hard Mining (FCHM), a training-only frequency-domain regulariser."""
+"""Frequency-Contrastive Hard Mining (FCHM), a training-only frequency-domain regulariser.
+频域对比难例挖掘：在幅度谱上拉近预测与 HD PET，推远最相近的 k 个 LD PET。
+"""
 import torch
 from torch import nn
 
@@ -26,9 +28,9 @@ class FrequencyContrastiveHardMining(nn.Module):
         p = torch.abs(torch.fft.fft2(positive, dim=(-2, -1))).flatten(1)
         n = torch.abs(torch.fft.fft2(negatives, dim=(-2, -1))).flatten(1)
 
-        d_ap = torch.linalg.vector_norm(a - p, dim=1)                         # (B,)
+        d_ap = torch.linalg.vector_norm(a - p, dim=1)                         # (B,) 锚点与正样本的距离
         d_an = torch.cdist(a.unsqueeze(0), n.unsqueeze(0)).squeeze(0)         # (B, B): anchor i vs negative j
         k = min(self.hard_neg_num, d_an.shape[1])
-        d_an_hard, _ = torch.topk(d_an, k=k, dim=1, largest=False)            # the k closest are the hardest
+        d_an_hard, _ = torch.topk(d_an, k=k, dim=1, largest=False)            # 距离最小的 k 个即难负样本
 
         return (d_ap / (d_an_hard.mean(dim=1) + self.delta)).mean()

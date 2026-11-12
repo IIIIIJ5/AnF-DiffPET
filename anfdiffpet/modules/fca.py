@@ -1,4 +1,5 @@
 """Frequency Cross-Attention (FCA), the building block of Anatomical-Frequency Guidance (AFG).
+频域交叉注意力：query 与 key 在傅里叶域相乘得到注意力图，再调制空间域的 value。
 
 Query and key are multiplied in the Fourier domain (patch-wise FFT, as in FFTformer),
 and the resulting map modulates the spatial-domain value branch.

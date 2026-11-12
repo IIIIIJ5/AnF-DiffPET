@@ -5,6 +5,7 @@ Forward process on the HD PET image x0 (1000-step linear beta schedule):
 The U-Net predicts the clean HD PET image from (x_t, LD PET, CT, t). The reverse step uses
     mu = sqrt(abar_{t-1}) beta_t / (1 - abar_t) * x0_hat + sqrt(alpha_t) (1 - abar_{t-1}) / (1 - abar_t) * x_t
 with the fixed posterior variance beta_tilde_t. Sampling starts from Gaussian noise; only LD PET and CT are needed.
+条件 DDPM（x0 预测）：训练时对 HD PET 加噪，网络直接预测干净的 HD PET；推理时从高斯噪声出发逐步去噪。
 """
 import torch
 import torch.nn.functional as F
@@ -53,6 +54,7 @@ class GaussianDiffusion(nn.Module):
 
     # ----------------------------------------------------------------------------- forward process
     def q_sample(self, x0, t, noise):
+        # 前向加噪：x_t = sqrt(abar_t) * x0 + sqrt(1 - abar_t) * noise
         return (extract(self.sqrt_alphas_cumprod, t, x0.shape) * x0 +
                 extract(self.sqrt_one_minus_alphas_cumprod, t, x0.shape) * noise)
 
@@ -64,10 +66,11 @@ class GaussianDiffusion(nn.Module):
     @torch.no_grad()
     def p_sample_loop(self, x_ld, ct):
         """Ancestral DDPM sampling over all time steps."""
-        img = torch.randn_like(x_ld)
+        img = torch.randn_like(x_ld)  # 从纯高斯噪声出发
         for t in tqdm(reversed(range(self.num_timesteps)), desc='sampling', total=self.num_timesteps, leave=False):
             batched_t = torch.full((img.shape[0],), t, device=img.device, dtype=torch.long)
             x0_hat = self.predict_x0(img, batched_t, x_ld, ct)
+            # 后验均值：由预测的 x0 与当前 x_t 线性组合得到
             mean = (extract(self.posterior_mean_coef1, batched_t, img.shape) * x0_hat +
                     extract(self.posterior_mean_coef2, batched_t, img.shape) * img)
             if t > 0:
@@ -89,6 +92,7 @@ class GaussianDiffusion(nn.Module):
             x0_hat = self.predict_x0(img, batched_t, x_ld, ct)
             if time_next < 0:
                 break
+            # 由预测的 x0 反推噪声，再确定性地跳到下一个时间步
             eps = (img - self.sqrt_alphas_cumprod[time] * x0_hat) / self.sqrt_one_minus_alphas_cumprod[time]
             img = self.sqrt_alphas_cumprod[time_next] * x0_hat + self.sqrt_one_minus_alphas_cumprod[time_next] * eps
         return x0_hat
@@ -110,11 +114,11 @@ class GaussianDiffusion(nn.Module):
         L_total = L1(x0_hat, x_HD) + lambda_FCHM * L_FCHM(x0_hat, x_HD, LD PET of the batch)
         """
         x_hd, x_ld = normalize_to_neg_one_to_one(x_hd), normalize_to_neg_one_to_one(x_ld)
-        t = torch.randint(0, self.num_timesteps, (x_hd.shape[0],), device=x_hd.device).long()
+        t = torch.randint(0, self.num_timesteps, (x_hd.shape[0],), device=x_hd.device).long()  # 每个样本随机时间步
         x_t = self.q_sample(x_hd, t, torch.randn_like(x_hd))
 
-        x0_hat = self.predict_x0(x_t, t, x_ld, ct, clip=False)
+        x0_hat = self.predict_x0(x_t, t, x_ld, ct, clip=False)  # 网络直接预测 HD PET
         loss = F.l1_loss(x0_hat, x_hd)
-        if self.fchm is not None:
+        if self.fchm is not None:  # 锚点：预测的 HD PET；正样本：HD PET；负样本：batch 内的 LD PET
             loss = loss + self.fchm_weight * self.fchm(x0_hat, x_hd, x_ld)
         return loss

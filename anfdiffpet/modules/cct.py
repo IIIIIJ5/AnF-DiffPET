@@ -1,4 +1,5 @@
 """Channel-wise Cross-Transformer (CCT) used by Multi-Scale Cross-Transformer Reconstruction (MSCTR).
+通道交叉 Transformer：每个尺度的跳连特征各自产生 query，key/value 来自四个尺度的拼接，实现跨尺度信息交换。
 
 Adapted from UCTransNet (Wang et al., AAAI 2022, https://github.com/McGregorWwww/UCTransNet).
 Each of the four U-Net skip features gives its own query, while keys and values come from the

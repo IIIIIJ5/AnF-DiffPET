@@ -1,4 +1,5 @@
 """Frozen MedDINOv3 ViT-B/16 encoder that turns a CT slice into multi-scale anatomical priors.
+冻结的 MedDINOv3 编码器：从 CT 切片提取 1/4、1/8 分辨率的解剖特征（主干冻结，仅上采样层参与训练）。
 
 MedDINOv3 code and weights are not bundled here. See README.md ("MedDINOv3 setup").
 By default the code looks for:

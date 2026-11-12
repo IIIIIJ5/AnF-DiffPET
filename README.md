@@ -36,8 +36,16 @@ pip install -r requirements.txt
 
 **Train / test**
 
+All settings live in `config.py`, including the module switches. `train.py` and `test.py` both read them, so a test always uses the architecture the model was trained with. Set a switch to `False` for the corresponding ablation:
+
+```python
+use_afg = True     # AFG: MedDINOv3 CT priors injected by two cascaded FCA blocks
+use_msctr = True   # MSCTR: cross-transformer reconstruction of the skip features
+use_fchm = True    # FCHM: frequency-contrastive hard mining loss (training only)
+```
+
 ```bash
-python train.py --data_dir data/lists --results_dir results/anf_diffpet
+python train.py --data_dir data/lists
 python test.py  --data_dir data/lists --checkpoint results/anf_diffpet/model-100000.pt --save_dir results/test
 ```
 
@@ -46,9 +54,10 @@ Training defaults:
 - Adam with learning rate 2e-4, batch size 4 with 2 accumulation steps, 100k iterations, EMA 0.995;
 - loss L1 + λ·FCHM with λ = 1.0 and *k* = 2.
 
-`test.py` samples with the full 1000-step DDPM, reports PSNR / SSIM and saves the denoised slices. `--sampling_steps N` switches to an N-step DDIM sampler. `--no_msctr` and `--no_fchm` give the ablations.
+`test.py` samples with the full 1000-step DDPM, reports PSNR / SSIM and saves the denoised slices. `--sampling_steps N` switches to an N-step DDIM sampler.
 
 ```
+config.py            # module switches and hyperparameters
 anfdiffpet/
 ├── unet.py          # CT-conditioned U-Net (AFG + MSCTR), predicts x0
 ├── diffusion.py     # conditional DDPM: training loss (L1 + FCHM), DDPM / DDIM sampling
@@ -94,9 +103,7 @@ AnF-DiffPET 用条件扩散模型给低剂量 PET 去噪，并用配准好的 CT
 1. 安装依赖：`pip install -r requirements.txt`。
 2. 按上文 *MedDINOv3* 一段准备代码和权重。
 3. 准备数据：在 `data_dir` 下放六个列表文件 `{train,test}_{hd,ld,ct}.txt`，每行是一张二维灰度切片的路径，三个列表按行一一对应。
-4. 训练和测试的命令同上。默认设置：
-   - 线性噪声调度，1000 步；
-   - Adam，学习率 2e-4；
-   - 损失为 L1 + FCHM，λ = 1.0，k = 2。
-
-   测试默认用 1000 步 DDPM 采样；`--no_msctr`、`--no_fchm` 用于消融实验。
+4. 所有设置都在 `config.py` 中，train.py 和 test.py 共用。
+   - 模块开关为 `use_afg`、`use_msctr`、`use_fchm`，设为 `False` 即对应的消融实验。
+   - 默认设置：线性噪声调度 1000 步；Adam，学习率 2e-4；损失为 L1 + FCHM，λ = 1.0，k = 2。
+5. 训练和测试的命令同上。测试默认用 1000 步 DDPM 采样。
