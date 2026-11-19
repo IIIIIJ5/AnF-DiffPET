@@ -4,11 +4,11 @@ from .unet import AnFUNet
 __all__ = ['GaussianDiffusion', 'AnFUNet', 'build_anf_diffpet']
 
 
-def build_anf_diffpet(image_size=128, dim=64, dim_mults=(1, 2, 4, 8), sampling_timesteps=1000,
+def build_anf_diffpet(image_size=128, dim=64, dim_mults=(1, 2, 4, 8), sampling_timesteps=10,
                       use_afg=True, use_msctr=True, use_fchm=True, fchm_weight=1.0, fchm_k=2, ct_backbone=None):
-    """AnF-DiffPET: x0-predicting U-Net (AFG + MSCTR) in a conditional DDPM, trained with L1 + FCHM.
+    """AnF-DiffPET: x0-predicting U-Net (AFG + MSCTR) in a conditional diffusion model, trained with L1 + FCHM.
 
-    sampling_timesteps = 1000 gives ancestral DDPM sampling; fewer steps switch to DDIM.
+    Inference uses deterministic DDIM sampling with sampling_timesteps reverse steps (paper: 10).
     use_afg / use_msctr / use_fchm are the module switches (默认全部开启，关闭即为对应消融).
     """
     unet = AnFUNet(dim=dim, dim_mults=dim_mults, channels=1, image_size=image_size,

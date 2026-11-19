@@ -22,12 +22,11 @@ ema_decay = 0.995
 fchm_weight = 1.0         # lambda_FCHM
 fchm_k = 2                # 难负样本个数 k
 eval_every = 5000         # 每隔多少步在测试集上评估一次
-eval_sampling_steps = 50  # 训练中评估用 DDIM 少步采样以节省时间
 save_last_every = 5000    # 每隔多少步更新 last.pt（用于断点续训）
 save_every = 100000       # 每隔多少步另存一个 model-<step>.pt
 num_workers = 4
 seed = 10
 
-# ============================== 测试 / testing ==============================
-test_sampling_steps = 1000  # 1000 = 完整 DDPM 祖先采样；更少步数则改用 DDIM
+# ============================== 推理 / inference ==============================
+sampling_steps = 10       # DDIM 反向采样步数（论文设置：10 步，eta = 0），训练中评估与测试共用
 test_batch_size = 16

@@ -16,7 +16,7 @@ Xuepeng Liu, Ruili Li, Zetong Liu, Renyiming Li, Yan Li, Yin Dai, Chao Li, Yueya
 
 ## Overview
 
-AnF-DiffPET denoises low-dose (LD) PET with a conditional diffusion model that uses the registered CT as an anatomical guide. The denoising U-Net predicts the HD PET image directly (x0-prediction). At inference, sampling starts from Gaussian noise and needs only LD PET and CT.
+AnF-DiffPET denoises low-dose (LD) PET with a conditional diffusion model that uses the registered CT as an anatomical guide. The denoising U-Net predicts the HD PET image directly (x0-prediction). At inference, 10-step DDIM sampling starts from Gaussian noise and needs only LD PET and CT.
 
 - **AFG (Anatomical-Frequency Guidance).** A frozen MedDINOv3 encoder extracts CT priors. Two cascaded Frequency Cross-Attention (FCA) blocks inject them into the PET features of the U-Net encoder.
 - **MSCTR (Multi-Scale Cross-Transformer Reconstruction).** Channel-wise cross-transformers rebuild the skip features of all scales jointly before decoding.
@@ -50,17 +50,17 @@ python test.py  --data_dir data/lists --checkpoint results/anf_diffpet/model-100
 ```
 
 Training defaults:
-- 1000-step linear noise schedule;
+- linear noise schedule;
 - Adam with learning rate 2e-4, batch size 4 with 2 accumulation steps, 100k iterations, EMA 0.995;
 - loss L1 + λ·FCHM with λ = 1.0 and *k* = 2.
 
-`test.py` samples with the full 1000-step DDPM, reports PSNR / SSIM and saves the denoised slices. `--sampling_steps N` switches to an N-step DDIM sampler.
+Inference uses deterministic 10-step DDIM sampling (eta = 0), as in the paper; the step count is `sampling_steps` in `config.py`. `test.py` reports PSNR / SSIM and saves the denoised slices.
 
 ```
 config.py            # module switches and hyperparameters
 anfdiffpet/
 ├── unet.py          # CT-conditioned U-Net (AFG + MSCTR), predicts x0
-├── diffusion.py     # conditional DDPM: training loss (L1 + FCHM), DDPM / DDIM sampling
+├── diffusion.py     # conditional diffusion: training loss (L1 + FCHM), 10-step DDIM sampling
 ├── losses.py        # FCHM
 ├── modules/         # FCA, MedDINOv3 encoder, cross-transformer, U-Net blocks
 ├── trainer.py       # training loop, EMA, evaluation
@@ -93,7 +93,7 @@ This code builds on several open-source projects:
 
 ## 中文说明
 
-AnF-DiffPET 用条件扩散模型给低剂量 PET 去噪，并用配准好的 CT 提供解剖信息。去噪 U-Net 直接预测 HD PET 图像（x0 预测）。推理时从高斯噪声出发，只需要 LD PET 和 CT。
+AnF-DiffPET 用条件扩散模型给低剂量 PET 去噪，并用配准好的 CT 提供解剖信息。去噪 U-Net 直接预测 HD PET 图像（x0 预测）。推理时从高斯噪声出发，用 10 步 DDIM 采样，只需要 LD PET 和 CT。
 
 - **AFG（解剖-频率引导）**：冻结的 MedDINOv3 先从 CT 中提取解剖先验，再由两级级联的频域交叉注意力（FCA）把它注入 U-Net 编码器的 PET 特征。
 - **MSCTR（多尺度交叉 Transformer 重建）**：解码之前，用通道交叉 Transformer 联合重建各个尺度的跳连特征。
@@ -105,5 +105,5 @@ AnF-DiffPET 用条件扩散模型给低剂量 PET 去噪，并用配准好的 CT
 3. 准备数据：在 `data_dir` 下放六个列表文件 `{train,test}_{hd,ld,ct}.txt`，每行是一张二维灰度切片的路径，三个列表按行一一对应。
 4. 所有设置都在 `config.py` 中，train.py 和 test.py 共用。
    - 模块开关为 `use_afg`、`use_msctr`、`use_fchm`，设为 `False` 即对应的消融实验。
-   - 默认设置：线性噪声调度 1000 步；Adam，学习率 2e-4；损失为 L1 + FCHM，λ = 1.0，k = 2。
-5. 训练和测试的命令同上。测试默认用 1000 步 DDPM 采样。
+   - 默认设置：线性噪声调度；Adam，学习率 2e-4；损失为 L1 + FCHM，λ = 1.0，k = 2。
+5. 训练和测试的命令同上。推理用 10 步 DDIM 采样（eta = 0），与论文一致。

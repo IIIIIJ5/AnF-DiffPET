@@ -38,7 +38,7 @@ def main():
     set_seed(cfg.seed)
     num_steps, eval_every = (200, 100) if args.debug else (cfg.num_steps, cfg.eval_every)
 
-    trainer = Trainer(build_from_config(cfg.eval_sampling_steps),
+    trainer = Trainer(build_from_config(cfg.sampling_steps),
                       dataset(args.data_dir, 'train'), dataset(args.data_dir, 'test'),
                       results_folder=args.results_dir, batch_size=cfg.batch_size,
                       gradient_accumulate_every=cfg.grad_accum, lr=cfg.lr, num_steps=num_steps,

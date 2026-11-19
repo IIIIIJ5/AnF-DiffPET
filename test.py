@@ -19,7 +19,7 @@ def main():
     p.add_argument('--checkpoint', required=True)
     p.add_argument('--data_dir', default=cfg.data_dir)
     p.add_argument('--save_dir', default=None)
-    p.add_argument('--sampling_steps', type=int, default=cfg.test_sampling_steps)
+    p.add_argument('--sampling_steps', type=int, default=cfg.sampling_steps, help='DDIM steps (paper: 10)')
     args = p.parse_args()
 
     set_seed(cfg.seed)
